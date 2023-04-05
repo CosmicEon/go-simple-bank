@@ -1,0 +1,34 @@
+// Get Postgres Image
+docker pull postgres:latest
+
+username: root
+password: secret
+
+// Run Postgres Image
+docker run --name postgres12 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
+
+// Acces Postres Container
+// root user didn't worked out
+docker exec -it postgres12 psql // -U postgres
+
+// Get Logs for Postgres Container
+docker logs postgres12
+
+// ------------
+
+// Setup DB Migrations
+Link to repo: https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
+
+curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-386.tar.gz | tar xvz
+
+./lib/migrate create -ext sql -dir db/migration -seq init_schema
+
+docker exec -it postgres12 /bin/sh
+
+createdb --username=postgres --owner=root simple_bank
+
+docker exec -it postgres12 createdb --username=root --owner=root simple_bank
+docker exec -it postgres12 psql -U root simple_bank
+
+// Run migration
+./lib/migrate -path db/migration -database "postgres://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
