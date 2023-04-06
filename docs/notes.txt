@@ -32,3 +32,13 @@ docker exec -it postgres12 psql -U root simple_bank
 
 // Run migration
 ./lib/migrate -path db/migration -database "postgres://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
+
+// Generating CRUD Golang code from SQL
+
+./lib/sqlc version
+./lib/sqlc help
+
+// Run init and adjust the `sqlc.yaml` file to the current setup
+./lib/sqlc init
+
+./lib/sqlc generate
