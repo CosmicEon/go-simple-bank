@@ -19,4 +19,10 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc
+proto:
+	rm -f schema/gen/*.go
+	protoc --proto_path=schema/proto --go_out=schema/gen --go_opt=paths=source_relative \
+    --go-grpc_out=schema/gen --go-grpc_opt=paths=source_relative \
+    schema/proto/*.proto
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test proto

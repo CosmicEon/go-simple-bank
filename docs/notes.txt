@@ -1,3 +1,9 @@
+// Progress
+10 - started but need gRPC first
+39 - skip to this clip because need to see it
+
+// ---------------------------------------
+
 // Get Postgres Image
 docker pull postgres:latest
 
@@ -14,7 +20,7 @@ docker exec -it postgres12 psql // -U postgres
 // Get Logs for Postgres Container
 docker logs postgres12
 
-// ------------
+// ---------------------------------------
 
 // Setup DB Migrations
 Link to repo: https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
@@ -42,6 +48,8 @@ docker exec -it postgres12 psql -U root simple_bank
 ./lib/sqlc init
 
 ./lib/sqlc generate
+
+// ---------------------------------------
 
 // setup transaction deadlock by running 2 postgres instances
 // /docs/transfer_example.sql
@@ -96,3 +104,6 @@ simple_bank set transaction isolation level serializable;
 // set per transaction isolation
 select @@transaction_isolation;
 
+// ---------------------------------------
+
+//create a gRPC build
