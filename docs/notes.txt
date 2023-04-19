@@ -106,4 +106,42 @@ select @@transaction_isolation;
 
 // ---------------------------------------
 
+Enviroment variable file loader -> viper
+
+// ---------------------------------------
+
+Mocking the DB by using package -> gomock
+
+Installing by running:
+go install github.com/golang/mock/mockgen@v1.6.0
+
+Verify mockgen file is installed
+ls -l ~/go/bin
+
+Verify that mockgen has recognized runner
+which mockgen
+
+Add the golang executables to local user variables
+Open the ".bash_profile" or ".bashrc" depending on what is already set
+code ~/.bashrc
+
+Add this line et the end of the file
+export PATH=$PATH:~/go/bin
+
+Reload the file
+source ~/.bashrc
+
+Verify that mockgen has recognized runner
+which mockgen
+
+Create mock for DB
+mockgen -package mockdb -destination db/mock/store.go github.com/cosmiceon/go-simple-bank/db/sqlc Store
+
+// ---------------------------------------
+
+Create migration for the new Users table
+./lib/migrate create -ext sql -dir db/migration -seq add_users
+
+// ---------------------------------------
+
 //create a gRPC build
