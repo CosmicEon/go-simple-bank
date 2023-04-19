@@ -144,4 +144,21 @@ Create migration for the new Users table
 
 // ---------------------------------------
 
+Build the application in the root directory with tag 
+docker build -t simplebank:latest .
+
+docker run --name simplebank -p 8000:8000 -e GIN_MODE=release simplebank:latest
+
+Create docker network
+docker network create bank-network
+
+Connect existing docker container to network
+docker network connect bank-network postgres12
+
+Create app with DB connection env
+docker run --name simplebank --network bank-network -p 8000:8000 -e GIN_MODE=release -e DB_SOURCE="postgresql://root:secret@postgres12:5432/simple_bank?sslmode=disable" simplebank:latest
+
+
+// ---------------------------------------
+
 //create a gRPC build
