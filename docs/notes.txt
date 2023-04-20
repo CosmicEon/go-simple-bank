@@ -27,7 +27,7 @@ Link to repo: https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
 
 curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-386.tar.gz | tar xvz
 
-./lib/migrate create -ext sql -dir db/migration -seq init_schema
+./libs/migrate create -ext sql -dir db/migration -seq init_schema
 
 docker exec -it postgres12 /bin/sh
 
@@ -37,17 +37,17 @@ docker exec -it postgres12 createdb --username=root --owner=root simple_bank
 docker exec -it postgres12 psql -U root simple_bank
 
 // Run migration
-./lib/migrate -path db/migration -database "postgres://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
+./libs/migrate -path db/migration -database "postgres://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
 
 // Generating CRUD Golang code from SQL
 
-./lib/sqlc version
-./lib/sqlc help
+./libs/sqlc version
+./libs/sqlc help
 
 // Run init and adjust the `sqlc.yaml` file to the current setup
-./lib/sqlc init
+./libs/sqlc init
 
-./lib/sqlc generate
+./libs/sqlc generate
 
 // ---------------------------------------
 
@@ -140,7 +140,7 @@ mockgen -package mockdb -destination db/mock/store.go github.com/cosmiceon/go-si
 // ---------------------------------------
 
 Create migration for the new Users table
-./lib/migrate create -ext sql -dir db/migration -seq add_users
+./libs/migrate create -ext sql -dir db/migration -seq add_users
 
 // ---------------------------------------
 
@@ -158,6 +158,13 @@ docker network connect bank-network postgres12
 Create app with DB connection env
 docker run --name simplebank --network bank-network -p 8000:8000 -e GIN_MODE=release -e DB_SOURCE="postgresql://root:secret@postgres12:5432/simple_bank?sslmode=disable" simplebank:latest
 
+// ---------------------------------------
+
+Docker compose start application
+docker compose -f docker/docker-compose.yaml up
+
+Docker compose stop application
+docker compose -f docker/docker-compose.yaml down
 
 // ---------------------------------------
 

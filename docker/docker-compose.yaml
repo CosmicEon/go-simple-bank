@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15.2-alpine
+    container_name: bank_db
+    networks:
+      - bank-network
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=simple_bank
+
+  api:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: bank_api
+    networks:
+      - bank-network
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_SOURCE=postgresql://root:secret@bank_db:5432/simple_bank?sslmode=disable
+      - GIN_MODE=release
+    depends_on:
+      - postgres
+    # bellow is override of docker image run proces because of not waiting of migrations script before the db start
+    # while test is worked without it but this was showen from the lecture
+    # newer version handles with `depends_on` ?! 
+    entrypoint: [ "/app/wait-for.sh", "bank_db:5432", "--", "/app/start.sh" ]
+    command: [ "/app/main" ] # needs explicit call of Image CMD here because of overwite of ENTRYPOINT from the image
+
+networks:
+  bank-network:
