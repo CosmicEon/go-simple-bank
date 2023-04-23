@@ -168,4 +168,235 @@ docker compose -f docker/docker-compose.yaml down
 
 // ---------------------------------------
 
+// Apply migrations on AWS RDS instance localy
+./libs/migrate -path db/migration -database "postgres://root:<rds_password>@simple-bank.cd0k3wb1v4bh.eu-central-1.rds.amazonaws.com:5432/simple_bank" -verbose up
+
+// Generate random hash with 128 long and get only 1st 32
+openssl rand -hex 64 | head -c 32
+
+// ---------------------------------------
+
+// Install AWS CLI on Ubuntu
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+// Verify installation
+which aws
+aws --version
+
+// Login into CLI
+aws configure
+
+// Use the IAM Access Key
+
+// check result
+ls -l ~/.aws
+
+// check commands
+aws secretsmanager  help
+aws secretsmanager get-secret-value help
+
+// Create ECR Repository
+ECR > Repositories > Create Repository
+  Visibility settings -> Private
+  Repository name -> simple-bank
+  Confirm
+
+// Create IAM User for the AWS deployment
+IAM > Users > Add user
+  Step 1
+    User name -> github-ci
+  Step 2 
+    Permissions options -> Add user to group -> Add group
+
+// Create IAM User Group but openning modal
+  Group name -> deployment
+  Policies:
+    AmazonEC2ContainerRegistryFullAccess
+    SecretsManagerReadWrite
+  Create group
+
+  Step 3 from original flow
+    Create user
+
+// Create `github-ci` user Access key
+Users > github-ci > Security > Access keys > Create access key
+
+
+// get specific secret by id and query the retuned fileds and convert the output to text
+aws secretsmanager get-secret-value --secret-id simple_bank --query SecretString --output text
+
+// check if jq is present
+jq --version
+
+// install if not
+sudo apt install jq
+
+// jq converts string to json in our case by using 3 operators and 1 option
+// `to_entries` returns the input as array of objects with key value
+// `map` transforms the result to specific output
+// `.[]` removes the array and returns only the content of it
+// `-r` returns the raw output
+jq -r 'to_entries|map("\(.key)=\(.value)")|.[]'
+
+aws secretsmanager get-secret-value --secret-id simple_bank --query SecretString --output text | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]'
+
+// overwrite the local app.env file
+> app.env
+
+aws secretsmanager get-secret-value --secret-id simple_bank --query SecretString --output text | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env
+
+// test production build image fron ECR locally
+// get ECR login token
+aws ecr get-login-password
+
+// login to Docker ton AWS ECR by getting the password and passing it to docker login
+aws ecr get-login-password | docker login --username AWS --password-stdin 513841633533.dkr.ecr.eu-central-1.amazonaws.com
+
+// Pull the image localy
+docker pull 513841633533.dkr.ecr.eu-central-1.amazonaws.com/simplebank:0486cd339be687765e9ca2214fc7545d289f6b2f
+
+// ---------------------------------------
+
+// Create Amazon RDS
+RDS > Databases > Create database
+  Chose a database creation method -> Standard create
+  Enginge options > PostgresSQL
+  Tempaltes > Free tier
+  DB instance identifier > simple-bank
+  Master username > root
+  [check] Auto generate a password
+  DB instance class > db.t2.micro (because Free tier is selected)
+  Allocated storage > 20GiB
+  Virtual private cloud (VPC) > *use default selected*
+  Subnet group > *use default selected*
+  Public access > Yes
+    VPC securirity group > create new
+    New VPC security group name > access-postgres-anywhere
+    availablikity Zone > No preference
+  Database authentication > Password authentication
+  Additional configuration:
+    Initial database name > simple_bank
+  Create database
+
+// On the Databases panel the will be panel with `Creating database simple-bank` and
+// button to the right `View credential details`.
+
+// Open it and copy Master user and Master password.
+
+// ---------------------------------------
+
+// Install cubectl
+
+// download lates cubectl bin
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+// install to local bin
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+// check installed version
+kubectl version --client --output=yaml
+
+// add aws EKS cluster config to local dir -> ~/.kube/config
+aws eks update-kubeconfig --name simple-bank --region eu-central-1
+
+
+// if there are more then 1 cubectl used contexts, needs to be select 1
+kubectl config use-context arn:aws:eks:eu-central-1:513841633533:cluster/simple-bank
+
+// check the cluster but needs the user to login
+// in this case the local user is different to the user that created the EKS cluster and it is not the master
+// so cannot change the config
+kubectl cluster-info
+
+// check who is the current user
+aws sts get-caller-identity 
+
+// crete an access key for the rot user and 
+// add to aws credentials as a `default` and
+// move the `github-ci` access keys under `github` section 
+code ~/.aws/credentials
+
+// check is it working
+kubectl get pods
+kubectl cluster-info
+
+// apply AWS CLI to use `github-ci` IAM user 
+kubectl apply -f eks/aws-auth.yaml
+
+// set AWS CLI for using the `github` credentials
+export AWS_PROFILE=github
+
+// interesting tool for inspecting clusters
+./libs/k9s
+
+// run the deployment and apply in to AWS EKS cluster
+kubectl apply -f eks/deployment.yaml
+
+// The current deplyment is not creating the container because the maximum capacity
+// of the containers inside the pod is reached. AWS E2 T2.Micro has only 4 ENI and
+// all the available connections are ocupied by K8S internal system services.
+// Bigger machine in the Node Group is needed to be created  
+
+// Create EKS Node group
+EKS > Clusters > simple-bank > Compute > Node Group > Add Node Group
+  Step 1
+    Name -> simple-bank
+    Node IAM role -> AWSEKSNodeRole
+  Step 2
+    AMI type -> Amazon Linux 2 (AL2_x86_x64)
+    Capacity type -> On-Demand
+    Instance type -> t3.small (needs to small because have more ENI)
+    Disk size -> 10 GiB
+    Desire size -> 1 nodes
+    Minimum size -> 0 nodes
+    Maximum size -> 2 nodes
+  Step 3
+    Subnets -> *the default subnets are already selected*
+  Step 4
+    Confirm
+
+// Delete current deployment from k9s`
+// open deployments
+:deployments
+
+// delete selected deployment with key configuration
+Ctrl + D
+
+// Apply again the configuration on the new cluster
+kubectl apply -f eks/deployment.yaml
+
+// To access the pods from the cluster we need to a service to create
+// that will rout all the external trafic to the pods and apply the cluster
+kubectl apply -f eks/service.yaml
+
+// ---------------------------------------
+
+// Search for domain and check available options
+  Step 1
+    Choose a domain name - simple-bank.eu
+  Step 2
+    Contact type > person
+    
+// ---------------------------------------
+
+// Apply ingress to the cluster
+kubectl apply -f eks/ingress.yaml
+
+// add the ingress controller to AWS EKS
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.0/deploy/static/provider/aws/deploy.yaml
+
+// ---------------------------------------
+
+// install cert-manager
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+
+// ---------------------------------------
+
+// check latest K8s version
+https://storage.googleapis.com/kubernetes-release/release/stable.txt
+
+// ---------------------------------------
+
 //create a gRPC build
