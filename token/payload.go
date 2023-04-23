@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 )
 
 var (
@@ -20,7 +20,7 @@ type Payload struct {
 }
 
 func NewPayload(username string, duration time.Duration) (*Payload, error) {
-	tokenID, err := uuid.NewV4()
+	tokenID, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
 	}

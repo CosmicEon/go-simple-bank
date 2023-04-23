@@ -399,4 +399,20 @@ https://storage.googleapis.com/kubernetes-release/release/stable.txt
 
 // ---------------------------------------
 
+// Add sessions migartion
+./libs/migrate create -ext sql -dir db/migration -seq add_sessions
+
+// ---------------------------------------
+
+// Install the DBDocs
+npm install -g dbdocs
+
+// check if installed
+dbdocs
+
+// install VSCode extension `DBML Language`
+
+
+
+// ---------------------------------------
 //create a gRPC build
