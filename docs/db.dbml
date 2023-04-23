@@ -1,3 +1,9 @@
+Project simple_bank {
+  database_type: 'PostgreSQL'
+  Note: '''
+    # Simple Bank Database
+  '''
+}
 
 Table "accounts" {
   "id" bigserial [pk, increment]
@@ -6,9 +12,9 @@ Table "accounts" {
   "currency" varchar [not null]
   "created_at" timestamptz [not null, default: `now()`]
 
-Indexes {
-  owner
-}
+  Indexes {
+    owner
+  }
 }
 
 Table "entries" {
@@ -17,9 +23,9 @@ Table "entries" {
   "amount" bigint [not null, note: 'can be negative or positive']
   "created_at" timestamptz [not null, default: `now()`]
 
-Indexes {
-  account_id
-}
+  Indexes {
+    account_id
+  }
 }
 
 Table "transfers" {
@@ -29,11 +35,11 @@ Table "transfers" {
   "amount" bigint [not null, note: 'must be positive']
   "created_at" timestamptz [not null, default: `now()`]
 
-Indexes {
-  from_account_id
-  to_account_id
-  (from_account_id, to_account_id)
-}
+  Indexes {
+    from_account_id
+    to_account_id
+    (from_account_id, to_account_id)
+  }
 }
 
 Table "users" {

@@ -412,7 +412,22 @@ dbdocs
 
 // install VSCode extension `DBML Language`
 
+// login to dbdocs
+dbdocs login
+  Use Email > OTP
 
+// build
+dbdocs build docs/db.dbml
+
+link to page> https://dbdocs.io/krasen.ilkov.dev/simple_bank
+
+// set password to dbdocs page
+dbdocs password --set secret --project simple_bank
+
+// install cmd for dbml
+npm install -g @dbml/cli
+
+dbml2sql --postgres -o docs/schema.sql docs/db.dbml
 
 // ---------------------------------------
 //create a gRPC build

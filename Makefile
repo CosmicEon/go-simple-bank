@@ -1,3 +1,5 @@
+DB_URL=postgres://root:secret@localhost:5432/simple_bank?sslmode=disable
+
 postgres:
 	docker run --name postgres12 --network bank-network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
 
@@ -8,16 +10,22 @@ dropdb:
 	docker exec -it postgres12 dropdb simple_bank
 
 migrateup:
-	./libs/migrate -path db/migration -database "postgres://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
+	./libs/migrate -path db/migration -database "$(DB_URL)" -verbose up
 
 migrateup1:
-	./libs/migrate -path db/migration -database "postgres://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up 1
+	./libs/migrate -path db/migration -database "$(DB_URL)" -verbose up 1
 
 migratedown:
-	./libs/migrate -path db/migration -database "postgres://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
+	./libs/migrate -path db/migration -database "$(DB_URL)" -verbose down
 
 migratedown1:
-	./libs/migrate -path db/migration -database "postgres://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down 1
+	./libs/migrate -path db/migration -database "$(DB_URL)" -verbose down 1
+
+db_docks:
+	dbdocs build docs/db.dbml
+
+db_schema:
+	dbml2sql --postgres -o docs/schema.sql docs/db.dbml
 
 sqlc:
 	./libs/sqlc generate
@@ -37,4 +45,4 @@ proto:
     --go-grpc_out=schema/gen --go-grpc_opt=paths=source_relative \
     schema/proto/*.proto
 
-.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc test server mock proto
+.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown1 sqlc db_docks db_schema test server mock proto
